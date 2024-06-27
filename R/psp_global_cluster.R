@@ -1,3 +1,7 @@
+# Import future.apply for parallelization on multiple machines 
+library(future.apply)
+NODE_FILE = "cluster.txt"
+
 # function tuning the behaviour of the parameter space partitioning
 # see documentation
 psp_control <- function(radius = 0.1, init, lower, upper,
@@ -64,25 +68,20 @@ psp_control <- function(radius = 0.1, init, lower, upper,
 
 ## A handy function to set up parallel environment without increasing
 ## cyclomatic complexity of the main psp_global
-.parallelize <- function(parallel = FALSE, cl = NULL,
-                        object_names = NULL, lib_names = NULL) {
-    if (parallel == TRUE && is.null(cl)) {
-        no_cores <- parallel::detectCores()
-        cl <- parallel::makeCluster(no_cores)
-    } else if (parallel == TRUE && !is.null(cl)) {
-        cl <- parallel::makeCluster(cl)
-    }
+## Updated to use cluster nodes instead of threads iff `cluster.txt` exists
+.parallelize <- function(parallel = FALSE) {
+    if (parallel == TRUE && file.exists(NODE_FILE)){
+        # Read in table of cluster nodes
+        nodeTable = read.table(file = args[1], header = FALSE, sep = " ")
 
-    # HACK: code is clumsy
-    if (parallel == TRUE) {
-        object_names <- c(object_names, "lib_names")
-        parallel::clusterExport(cl, object_names, envir = environment())
-        parallel::clusterEvalQ(cl, {
-          sapply(lib_names,
-                 FUN = function(name) library(name, character.only = TRUE))
+        # Assign nodes based on input list
+        # HACH: code could be cleaner and more efficent (but I do know R well )
+        workers <- apply(nodeTable, 1, function(row){
+            # Node this panttern is from: https://berkeley-scf.github.io/tutorial-dask-future/R-future
+            # Not 100% sure that it ensure cores are evenly used for the node
+            rep(row[1],row[2])
         })
     }
-    return(cl)
 }
 
 ## Weisstein, Eric W. "Hypersphere Point Picking." From MathWorld.
@@ -106,7 +105,7 @@ psp_control <- function(radius = 0.1, init, lower, upper,
 ## Parameter Space Partitioning
 
 psp_global <- function(fn, control = psp_control(), ..., quiet = FALSE) {
-
+    print("dududu")
     .Deprecated(
         new = "pspGlobal", package = "psp",
         msg = paste("This function is no longer maintained and is scheduled for removal.\nPlease use pspGlobal instead.")
@@ -124,8 +123,7 @@ psp_global <- function(fn, control = psp_control(), ..., quiet = FALSE) {
     ex_libs <- ctrl$export_libs
 
     ## set up parallel
-    cl <- .parallelize(parallel = ctrl$parallel, cl = ctrl$cl,
-                      object_names = ex_objects, lib_names = ex_libs)
+    .parallelize(parallel = ctrl$parallel)
 
     ## define ordinal function
     fun <- match.fun(fn)
@@ -171,7 +169,7 @@ psp_global <- function(fn, control = psp_control(), ..., quiet = FALSE) {
 
         # evaluate new_points and record ordinal patterns
         ifelse(ctrl$parallel,
-           evaluate <- parallel::parApply(cl, new_points, 1, fun, ...),
+           evaluate <- future_apply(new_points, 1, fun, ...),
            evaluate <- apply(new_points, 1, fun, ...))
 
         ## save new results with points
@@ -214,8 +212,6 @@ psp_global <- function(fn, control = psp_control(), ..., quiet = FALSE) {
         ## is iteration limit reached, stop sampling
         if (while_count == ctrl$iterations) parameter_filled <- TRUE
     }
-    ## close parallel workplaces
-    if (ctrl$parallel == TRUE) parallel::stopCluster(cl)
     ## depending on dims of ordinal pattern compile output
     if (dimension) {
         pats <- unlist(parmat_big[, loc, with = FALSE], recursive = FALSE)

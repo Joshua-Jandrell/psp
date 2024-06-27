@@ -1,5 +1,19 @@
 # Finds nodes from a specified node list
 
+# // function test
+getNodes <- function(nodeTable){
+    # Assign nodes based on input list
+    # HACH: code could be cleaner and more efficent (but I do know R well )
+    workers <- apply(nodeTable, 1, function(row){
+        # Node this panttern is from: https://berkeley-scf.github.io/tutorial-dask-future/R-future
+        # Not 100% sure that it ensure cores are evenly used for the node
+        rep(row[1],row[2])
+    })
+
+
+    plan(cluster, workers = workers)
+}
+
 # Load future library
 library(future.apply)
 
@@ -13,16 +27,7 @@ if(length(args) != 1){
 # Read in table of cluster nodes
 nodeTable = read.table(file = args[1], header = FALSE, sep = " ")
 
-# Assign nodes based on input list
-# HACH: code could be cleaner and more efficent (but I do know R well )
-workers <- apply(nodeTable, 1, function(row){
-    # Node this panttern is from: https://berkeley-scf.github.io/tutorial-dask-future/R-future
-    # Not 100% sure that it ensure cores are evenly used for the node
-    rep(row[1],row[2])
-})
-
-
-plan(cluster, workers = workers)
+getNodes(nodeTable)
 
 
 # Test parallel code

@@ -1,4 +1,4 @@
-context('pspGlobal')
+context('pspGlobal_cluster')
 euclidean <- function(a, b) sqrt(sum((a - b)^2))
 
 # define center points for the 10 regions in a two-dimensional space
