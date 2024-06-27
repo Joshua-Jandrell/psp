@@ -1,3 +1,6 @@
+# Import future.apply for parallelization on multiple machines 
+# library(future.apply)
+
 # function tuning the behaviour of the parameter space partitioning
 # see documentation
 psp_control <- function(radius = 0.1, init, lower, upper,
