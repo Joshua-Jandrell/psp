@@ -4,3 +4,14 @@
 /docs/tmp
 /tmp/
 /.vscode/
+
+
+## === Added by JJ ===
+## TODO: Remove this struff later 
+# Builds
+*.o
+*.so
+
+# Bash
+*.sh
+## ===================

@@ -34,7 +34,7 @@ out <- suppressWarnings(
                                      init = rep(0.5, 5),
                                      radius = rep(0.5, 5),
                                      pop = 300,
-                                     parallel = FALSE,
+                                     parallel = TRUE,
                                      iterations = 100), legacy = TRUE)
         )
 
